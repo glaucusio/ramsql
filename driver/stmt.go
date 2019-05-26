@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/proullon/ramsql/engine/log"
 )
@@ -178,16 +179,26 @@ func replaceArguments(query string, args []driver.Value) string {
 	return replacedQuery
 }
 
+const mysqlFormat = `2006-01-02 15:04:05.999999`
+
 func replaceArgumentsODBC(query string, args []driver.Value) string {
 	var finalQuery string
 
 	queryParts := strings.Split(query, "?")
 	finalQuery = queryParts[0]
 	for i := range args {
-		arg := fmt.Sprintf("%v", args[i])
-		_, ok := args[i].(string)
-		if ok && !strings.HasSuffix(query, "'") {
-			arg = "$$" + arg + "$$"
+		var arg string
+		switch v := args[i].(type) {
+		case time.Time:
+			arg = v.Format(mysqlFormat)
+		case string:
+			if !strings.HasSuffix(query, "'") {
+				arg = "$$" + v + "$$"
+			} else {
+				arg = v
+			}
+		default:
+			arg = fmt.Sprintf("%v", args[i])
 		}
 		finalQuery += arg
 		finalQuery += queryParts[i+1]
