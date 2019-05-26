@@ -189,6 +189,8 @@ func replaceArgumentsODBC(query string, args []driver.Value) string {
 	for i := range args {
 		var arg string
 		switch v := args[i].(type) {
+		case nil:
+			arg = "null"
 		case time.Time:
 			arg = v.Format(mysqlFormat)
 		case string:
